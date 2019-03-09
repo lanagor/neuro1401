@@ -49,6 +49,16 @@ def plot_extinction_errors(initial_sham, extinction_sham, initial_lesion, extinc
     plt.tight_layout()
     plt.show()
 
+def plot_postextinction(sham, sham_time, lesion, lesion_time):
+    plt.plot(sham, sham_time, color='r', label='Sham Lesions')
+    plt.plot(lesion, lesion_time, color='b', label='OCF Lesions')
+    plt.tick_params( axis='x',          
+        which='both',      
+        bottom=False)
+    plt.legend()
+    plt.tight_layout()
+    plt.show()
+    
 def select_action(q_learning_params, q_values, state):
     '''Select an action given the current state and using the Luce rule.'''
     # Compute the probability of choosing 'right'
@@ -142,7 +152,7 @@ def reintroduction(state_action_reward_dict, q_learning_params, num_trials, q_va
 
         q_values = initial_q.copy()
 
-        pressed_array[i] = pressed
+        pressed_array[i] = pressed[-1]
         time_values_array[i] = time_elapsed
     return pressed_array, time_elapsed
 
@@ -173,9 +183,13 @@ def run_experiment():
     initial_lesion, extinction_lesion = extinction_learning(OFC_lesioned, q_learning_params, q_values_OFC)
 
     # runs trial with re-instatement
-    pressed_reintroduction_sham, time_elapsed_array_sham = reintroduction(sham_lesioned, q_learning_params, 500, q_values_OFC)
+    pressed_reintroduction_sham, time_elapsed_array_sham = reintroduction(sham_lesioned, q_learning_params, 500, q_values_sham)
+
+    # runs trial with re-instatement
+    pressed_reintroduction_sham, time_elapsed_array_sham = reintroduction(OFC_lesioned, q_learning_params, 500, q_values_OFC)
 
     # Plot results for comparison with paper plots 
     plot_extinction_errors(initial_sham, extinction_sham, initial_lesion, extinction_lesion)
+    plot_postextinction(pressed_reintroduction_sham, time_elapsed_array_sham, pressed_reintroduction_lesion, time_elapsed_array_lesion)
 
 run_experiment()
