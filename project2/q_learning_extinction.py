@@ -20,7 +20,6 @@ def plot_extinction_errors(initial_sham, extinction_sham, initial_lesion, extinc
 
     bar_width = 0.2
     opacity = 0.8
-    print(np.sum(initial_sham))
     plt.bar(1, np.sum(initial_sham), bar_width,
     color='b',
     label='Pre-extinction, Sham Lesions')
@@ -50,15 +49,16 @@ def plot_extinction_errors(initial_sham, extinction_sham, initial_lesion, extinc
     plt.show()
 
 def plot_postextinction(sham, sham_time, lesion, lesion_time):
-    plt.plot(sham, sham_time, color='r', label='Sham Lesions')
-    plt.plot(lesion, lesion_time, color='b', label='OCF Lesions')
+    plt.scatter(sham_time, sham, color='r', label='Sham Lesions')
+    plt.scatter(lesion_time, lesion, color='b', label='OCF Lesions')
+    plt.ylabel('Number of Times Pressing Button Over {} Iterations'.format(500))
     plt.tick_params( axis='x',          
         which='both',      
         bottom=False)
     plt.legend()
     plt.tight_layout()
     plt.show()
-    
+
 def select_action(q_learning_params, q_values, state):
     '''Select an action given the current state and using the Luce rule.'''
     # Compute the probability of choosing 'right'
@@ -85,7 +85,6 @@ def increment_press(state_action_reward_dict, state, action):
 
 def run_trial(state_action_reward_dict, q_learning_params, q_values, state, max_iters):
     '''Let the simulated agent take actions until they reach 90% correctness, and return how long it took them.'''
-    state = 1
     previous_action = None
     num_pressed = [0] * max_iters
 
@@ -148,13 +147,13 @@ def reintroduction(state_action_reward_dict, q_learning_params, num_trials, q_va
         # chooses initial state randomly
         initial_state = np.random.choice(['press', 'no press'], p=[1 - 1 / time_elapsed, 1 / time_elapsed])
 
-        pressed = run_trial(state_action_reward_dict, q_learning_params, q_values, 1, 500)
+        pressed = run_trial(state_action_reward_dict, q_learning_params, q_values, 1, 1000)
 
         q_values = initial_q.copy()
 
-        pressed_array[i] = pressed[-1]
+        pressed_array[i] = sum(pressed)
         time_values_array[i] = time_elapsed
-    return pressed_array, time_elapsed
+    return pressed_array, time_values_array
 
 
 def run_experiment():
@@ -167,7 +166,7 @@ def run_experiment():
 
     # Set-up for each experimental condition
     sham_lesioned = {'1': {'press': q_learning_params['reward'], 'no press': 0}, 
-                     '2': {'press': 0, 'no_press': 0}}
+                     '2': {'press': 0, 'no press': 0}}
     OFC_lesioned = {'1': {'press': q_learning_params['reward'], 'no press': 0}}
 
     q_values_sham = initialize_q_values(sham_lesioned)
@@ -177,16 +176,13 @@ def run_experiment():
     initial_sham, extinction_sham = extinction_learning(sham_lesioned, q_learning_params, q_values_sham)
 
     # runs trial with re-instatement
-    pressed_reintroduction_sham, time_elapsed_array_sham = reintroduction(sham_lesioned, q_learning_params, 500, q_values_sham)
+    pressed_reintroduction_sham, time_elapsed_array_sham = reintroduction(sham_lesioned, q_learning_params, 50, q_values_sham)
 
     # runs extinction with OFC lesioned agent
     initial_lesion, extinction_lesion = extinction_learning(OFC_lesioned, q_learning_params, q_values_OFC)
 
     # runs trial with re-instatement
-    pressed_reintroduction_sham, time_elapsed_array_sham = reintroduction(sham_lesioned, q_learning_params, 500, q_values_sham)
-
-    # runs trial with re-instatement
-    pressed_reintroduction_sham, time_elapsed_array_sham = reintroduction(OFC_lesioned, q_learning_params, 500, q_values_OFC)
+    pressed_reintroduction_lesion, time_elapsed_array_lesion = reintroduction(OFC_lesioned, q_learning_params, 50, q_values_OFC)
 
     # Plot results for comparison with paper plots 
     plot_extinction_errors(initial_sham, extinction_sham, initial_lesion, extinction_lesion)
