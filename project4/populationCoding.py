@@ -1,6 +1,8 @@
 import math
 import numpy as np
-from matplotlib import pyplot
+import matplotlib.pyplot as plt
+import os 
+import seaborn as sns
 
 params = {"M": 100, "grid_size": 50, "T": 100, "sample_size": 100, "num_samples": 100, "alpha": None,
 			"ro": None, "locations": 8, "num_trials": 225, "array_sizes": [1, 2, 4, 8], "gamma": None}
@@ -42,7 +44,6 @@ def gen_ro_eta_grid(params):
 def mean_activation(ro): 
 	f_ro =  np.i0(1. / ro).item() * np.exp(1. / ro).item()
 	return f_ro
-
 
 # driving input to ith neuron econding stimulus at jth location
 def feed_forward(theta, ro, phi, params, j):
@@ -95,7 +96,8 @@ def calc_error(theta_j, phi, j, params, sample_points):
 		if summation > max_sum:
 			max_sum = summation
 			argmax = theta
-	return theta
+	return argmax 
+	# return theta
 
 # runs experiment 1 as described in simulation and model fitting
 def run_experiment_1(params, phi):
@@ -125,6 +127,10 @@ def run_experiment_1(params, phi):
 		# runs 100 trials 
 		for i in range(params["num_samples"]):
 
+			if i % 10 == 0:
+
+				print("Trial: {}, Number of positions: {}".format(i, num_pos))
+
 			# choose a location to test on
 			j = np.random.randint(0, params["array_sizes"][pos]) - 1
 
@@ -138,14 +144,13 @@ if __name__ ==  "__main__":
 	phi = gen_phi(params)
 	results = run_experiment_1(params, phi)	
 	print(results)
-
-
-
-
-
-
-
-
-
-
-
+	# Since experiment takes a while to run, saving results locally (with option to load for plotting)
+	np.save(os.getcwd() + "/results.npy", results)
+	imported_results = np.load(os.getcwd() + "/results.npy")
+	for position in range(len(params['array_sizes'])):
+		sns.kdeplot(imported_results[position, :])
+		plt.title("Error Distribution for {} Stimuli".format(params['array_sizes'][position]))
+		plt.show()
+		plt.hist(imported_results[position, :])
+		plt.title("Histogram of Errors for {} Stimuli".format(params['array_sizes'][position]))
+		plt.show()
