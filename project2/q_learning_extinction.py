@@ -26,7 +26,7 @@ def plot_extinction_errors(initial_sham, extinction_sham, initial_lesion, extinc
      
     plt.bar(1.5, np.sum(initial_lesion), bar_width,
     color='r',
-    label='Pre-extinction, OCF Lesions')
+    label='Pre-extinction, OFC Lesions')
      
     plt.bar(2, np.sum(extinction_sham), bar_width,
     color='b',
@@ -34,7 +34,7 @@ def plot_extinction_errors(initial_sham, extinction_sham, initial_lesion, extinc
      
     plt.bar(2.5, np.sum(extinction_lesion), bar_width,
     color='r',
-    label='Post-Extinction, OCF Lesions')
+    label='Post-Extinction, OFC Lesions')
 
     plt.ylabel('Number of Times Pressing Button Over {} Iterations'.format(500))
     plt.title('Extinction Performance')
@@ -50,8 +50,9 @@ def plot_extinction_errors(initial_sham, extinction_sham, initial_lesion, extinc
 
 def plot_postextinction(sham, sham_time, lesion, lesion_time):
     plt.scatter(sham_time, sham, color='r', label='Sham Lesions')
-    plt.scatter(lesion_time, lesion, color='b', label='OCF Lesions')
-    plt.ylabel('Number of Times Pressing Button Over {} Iterations'.format(500))
+    plt.scatter(lesion_time, lesion, color='b', label='OFC Lesions')
+    plt.ylabel('Number of Times Pressing Button Over {} Iterations'.format(200))
+    plt.title('Reintroduction In OFC and Sham Lesioned Monkeys')
     plt.tick_params( axis='x',          
         which='both',      
         bottom=False)
@@ -76,12 +77,6 @@ def q_update(state_action_reward_dict, q_values, q_learning_params, state, actio
     '''Given the most recently taken action (and the resulting reward), update the stored q values.'''
     q_values[str(state)][action] += q_learning_params['alpha'] * (state_action_reward_dict[str(state)][action] - q_values[str(state)][action])
     return q_values 
-
-def increment_press(state_action_reward_dict, state, action):
-    if state == 1 and action == 'press':
-        return 1
-    else:
-        return 0
 
 def run_trial(state_action_reward_dict, q_learning_params, q_values, state, max_iters):
     '''Let the simulated agent take actions until they reach 90% correctness, and return how long it took them.'''
@@ -142,12 +137,16 @@ def reintroduction(state_action_reward_dict, q_learning_params, num_trials, q_va
 
         # now, re-introduction of reward
         # assuming state selected with probability proportional to the time since it last occurred
-        time_elapsed = np.random.randint(1, 100)
+        time_elapsed = np.random.randint(1, 10)
 
+
+        if len(state_action_reward_dict) == 2:
         # chooses initial state randomly
-        initial_state = np.random.choice(['press', 'no press'], p=[1 - 1 / time_elapsed, 1 / time_elapsed])
+            initial_state = np.random.choice([1, 2], p=[1 - 1 / time_elapsed, 1 / time_elapsed])
+        else:
+            initial_state = 1
 
-        pressed = run_trial(state_action_reward_dict, q_learning_params, q_values, 1, 1000)
+        pressed = run_trial(state_action_reward_dict, q_learning_params, q_values, initial_state, 1000)
 
         q_values = initial_q.copy()
 
@@ -176,13 +175,13 @@ def run_experiment():
     initial_sham, extinction_sham = extinction_learning(sham_lesioned, q_learning_params, q_values_sham)
 
     # runs trial with re-instatement
-    pressed_reintroduction_sham, time_elapsed_array_sham = reintroduction(sham_lesioned, q_learning_params, 50, q_values_sham)
+    pressed_reintroduction_sham, time_elapsed_array_sham = reintroduction(sham_lesioned, q_learning_params, 200, q_values_sham)
 
     # runs extinction with OFC lesioned agent
     initial_lesion, extinction_lesion = extinction_learning(OFC_lesioned, q_learning_params, q_values_OFC)
 
     # runs trial with re-instatement
-    pressed_reintroduction_lesion, time_elapsed_array_lesion = reintroduction(OFC_lesioned, q_learning_params, 50, q_values_OFC)
+    pressed_reintroduction_lesion, time_elapsed_array_lesion = reintroduction(OFC_lesioned, q_learning_params, 200, q_values_OFC)
 
     # Plot results for comparison with paper plots 
     plot_extinction_errors(initial_sham, extinction_sham, initial_lesion, extinction_lesion)
