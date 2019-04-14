@@ -5,8 +5,10 @@ import os
 from scipy import stats
 import seaborn as sns
 
+# Note I changed num_trials to 100 for now
+
 params = {"M": 100, "grid_size": 50, "T": 100, "sample_size": 100, "num_samples": 100, "alpha": None,
-			"ro": 0.5, "locations": 8, "num_trials": 225, "array_sizes": [1, 2, 4, 8], "gamma": 160}
+			"ro": 0.5, "locations": 8, "num_trials": 100, "array_sizes": [1, 2, 4, 8], "gamma": 160}
 sample_points = np.linspace(-math.pi, math.pi, num=100, endpoint=False)
 
 # randomly generates a sampling of preferred orientations for i neurons 
@@ -50,7 +52,9 @@ def mean_activation(ro):
 def feed_forward(theta, ro, phi, params, j):
 	driving_input = np.empty(params["M"])
 	for i in range(params["M"]):
-		driving_input[i] = (math.cos(phi[i][j] - theta[j])) / ro - 1
+		# Commented out line below because it was computing wrong expression
+		driving_input[i] = (math.cos(phi[i][j] - theta[j]) - 1) / ro 
+		# driving_input[i] = (math.cos(phi[i][j] - theta[j])) / ro - 1
 	return np.exp(driving_input) 
 
 # firing rate of a neuron as a function of jth theta value
@@ -65,7 +69,7 @@ def firing_rate(theta, ro, phi, j, params):
 	f_ro = mean_activation(ro)
 	sum_alpha = np.sum(alpha)
 	for i in range(params["M"]):
-		firing_rate[i][j] = gamma * (1 / params["alpha"]) * (f[i] / (M * f_ro))
+		firing_rate[i][j] = gamma * (1. / params["alpha"]) * (f[i] / (M * f_ro))
 	return firing_rate
 
 # generates spikes by sampling from equation 5
@@ -128,7 +132,7 @@ def run_experiment_1(params, phi):
 
 		# salience of position: to start, 1 if stimulus and 0 if not
 		params["alpha"] = num_pos
-		print(params["alpha"])
+		# print(params["alpha"])
 		# runs 100 trials 
 		for i in range(params["num_trials"]):
 
@@ -144,6 +148,7 @@ def run_experiment_1(params, phi):
 
 				print("Trial: {}, Number of positions: {}".format(i, num_pos))
 		print(params)
+		print("Output for {} positions: {}".format(num_pos, output[pos, :]))
 	return output
 
 if __name__ ==  "__main__":
@@ -165,7 +170,7 @@ if __name__ ==  "__main__":
 		# sns.kdeplot(imported_results[position])
 		plt.title("Error Distribution for {} Stimuli".format(params['array_sizes'][position]))
 		plt.show()
-		plt.hist(imported_results[position])
+		plt.hist(imported_results[position], bins=50, range=(-np.pi, np.pi))
 		plt.title("Histogram of Errors for {} Stimuli".format(params['array_sizes'][position]))
 		plt.show()
 	plt.scatter(params["array_sizes"], variance)
