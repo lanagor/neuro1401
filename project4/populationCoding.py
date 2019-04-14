@@ -2,6 +2,7 @@ import math
 import numpy as np
 import matplotlib.pyplot as plt
 import os 
+from scipy import stats
 import seaborn as sns
 
 params = {"M": 100, "grid_size": 50, "T": 100, "sample_size": 100, "num_samples": 100, "alpha": None,
@@ -130,9 +131,10 @@ def run_experiment_1(params, phi):
 
 		# runs 100 trials 
 		for i in range(params["num_samples"]):
-
+			j_list = []
 			# choose a location to test on
 			j = max(np.random.randint(0, params["array_sizes"][pos]) - 1, 0)
+			j_list.append(j)
 
 			# sample from error distribution
 			delta_theta = calc_error(theta, phi, j, params, sample_points)
@@ -142,17 +144,21 @@ def run_experiment_1(params, phi):
 			if i % 10 == 0:
 
 				print("Trial: {}, Number of positions: {}".format(i, num_pos))
+				print(j_list)
 	return output
 
 if __name__ ==  "__main__":
-	# phi = gen_phi(params)
-	# results = run_experiment_1(params, phi)	
+	phi = gen_phi(params)
+	results = run_experiment_1(params, phi)	
 
-	# # Since experiment takes a while to run, saving results locally (with option to load for plotting)
-	# np.save(os.getcwd() + "/results.npy", results)
+	# Since experiment takes a while to run, saving results locally (with option to load for plotting)
+	np.save(os.getcwd() + "/results.npy", results)
 	imported_results = np.load(os.getcwd() + "/results.npy")
 	sample_points = np.linspace(-math.pi, math.pi, params["sample_size"], endpoint=False)
+	variance, kurtosis = np.empty((len(params["array_sizes"]),)), np.empty((len(params["array_sizes"]),))
 	for position in range(len(params['array_sizes'])):
+		kurtosis[position] = stats.kurtosis(imported_results[position])
+		variance[position] = np.var(imported_results[position])
 		print(imported_results[position])
 		plt.plot(sample_points, imported_results[position])
 		# sns.kdeplot(imported_results[position])
@@ -161,3 +167,11 @@ if __name__ ==  "__main__":
 		plt.hist(imported_results[position])
 		plt.title("Histogram of Errors for {} Stimuli".format(params['array_sizes'][position]))
 		plt.show()
+	plt.scatter(params["array_sizes"], variance)
+	plt.xlabel("Items")
+	plt.ylabel("variance")
+	plt.show()
+	plt.scatter(params["array_sizes"], kurtosis)
+	plt.xlabel("Items")
+	plt.ylabel("kurtosis")
+	plt.show()
