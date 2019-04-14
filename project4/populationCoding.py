@@ -5,7 +5,7 @@ import os
 import seaborn as sns
 
 params = {"M": 100, "grid_size": 50, "T": 100, "sample_size": 100, "num_samples": 100, "alpha": None,
-			"ro": None, "locations": 8, "num_trials": 225, "array_sizes": [1, 2, 4, 8], "gamma": None}
+			"ro": 0.5, "locations": 8, "num_trials": 225, "array_sizes": [1, 2, 4, 8], "gamma": 160}
 sample_points = np.linspace(-math.pi, math.pi, num=100, endpoint=False)
 
 # randomly generates a sampling of preferred orientations for i neurons 
@@ -24,7 +24,7 @@ def gen_phi(params):
 def gen_alpha(params, num_cued):
 	return np.concatenate((np.ones(num_cued), np.zeros(params["locations"] - num_cued)))
 
-# creates array of possible error values
+# creates array of actual orientation values
 def gen_theta(size):
 	return np.random.uniform(-math.pi, math.pi, size=size)	
 
@@ -64,7 +64,7 @@ def firing_rate(theta, ro, phi, j, params):
 	f_ro = mean_activation(ro)
 	sum_alpha = np.sum(alpha)
 	for i in range(params["M"]):
-		firing_rate[i][j] = gamma * (alpha[j] / sum_alpha) * (f[i] / (M * f_ro))
+		firing_rate[i][j] = gamma * (1 / params["alpha"]) * (f[i] / (M * f_ro))
 	return firing_rate
 
 # generates spikes by sampling from equation 5
@@ -80,7 +80,11 @@ def gen_epsilon(phi, theta, j, params):
 			spike_max = spike
 			argmax = i
 	phi_i = phi[argmax][j]
-	return phi_i - theta[j]
+	return circle_subtract(phi_i, theta[j])
+
+def circle_subtract(theta1, theta2):
+	difference = theta1 - theta2
+	return difference - (difference / (2 * math.pi))
 
 # finds delta theta/ recall error
 def calc_error(theta_j, phi, j, params, sample_points):
@@ -92,12 +96,12 @@ def calc_error(theta_j, phi, j, params, sample_points):
 	for theta in range(len(sample_points)):
 		summation = 0
 		for i in range(m):
-			summation += math.cos(sample_points[theta] - gen_epsilon(phi, theta_j, j, params))
+			epsilon = gen_epsilon(phi, theta_j, j, params)
+			summation += math.cos(sample_points[theta] - epsilon)
 		if summation > max_sum:
 			max_sum = summation
 			argmax = theta
 	return argmax 
-	# return theta
 
 # runs experiment 1 as described in simulation and model fitting
 def run_experiment_1(params, phi):
@@ -122,35 +126,38 @@ def run_experiment_1(params, phi):
 		theta = gen_theta(num_pos)
 
 		# salience of position: to start, 1 if stimulus and 0 if not
-		params["alpha"] = gen_alpha(params, num_pos)
+		params["alpha"] = num_pos
 
 		# runs 100 trials 
 		for i in range(params["num_samples"]):
 
+			# choose a location to test on
+			j = max(np.random.randint(0, params["array_sizes"][pos]) - 1, 0)
+
+			# sample from error distribution
+			delta_theta = calc_error(theta, phi, j, params, sample_points)
+
+			output[pos][delta_theta] += 1
+
 			if i % 10 == 0:
 
 				print("Trial: {}, Number of positions: {}".format(i, num_pos))
-
-			# choose a location to test on
-			j = np.random.randint(0, params["array_sizes"][pos]) - 1
-
-			# sample from error distribution
-			theta_j = calc_error(theta, phi, j, params, sample_points)
-
-			output[pos][theta_j] += 1
 	return output
 
 if __name__ ==  "__main__":
-	phi = gen_phi(params)
-	results = run_experiment_1(params, phi)	
-	print(results)
-	# Since experiment takes a while to run, saving results locally (with option to load for plotting)
-	np.save(os.getcwd() + "/results.npy", results)
+	# phi = gen_phi(params)
+	# results = run_experiment_1(params, phi)	
+
+	# # Since experiment takes a while to run, saving results locally (with option to load for plotting)
+	# np.save(os.getcwd() + "/results.npy", results)
 	imported_results = np.load(os.getcwd() + "/results.npy")
+	sample_points = np.linspace(-math.pi, math.pi, params["sample_size"], endpoint=False)
 	for position in range(len(params['array_sizes'])):
-		sns.kdeplot(imported_results[position, :])
+		print(imported_results[position])
+		plt.plot(sample_points, imported_results[position])
+		# sns.kdeplot(imported_results[position])
 		plt.title("Error Distribution for {} Stimuli".format(params['array_sizes'][position]))
 		plt.show()
-		plt.hist(imported_results[position, :])
+		plt.hist(imported_results[position])
 		plt.title("Histogram of Errors for {} Stimuli".format(params['array_sizes'][position]))
 		plt.show()
