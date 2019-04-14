@@ -108,7 +108,7 @@ def calc_error(theta_j, phi, j, params, sample_points):
 def run_experiment_1(params, phi):
 	# matrix for storing number of errors of each size: initialized to 0
 	output = np.zeros((len(params["array_sizes"]), params["sample_size"]))
-	params["gamma"] = np.random.randint(0, 640)
+	params["gamma"] = np.random.randint(230, 640)
 
 	# generates grid with all possible combos of ro/eta values ('simulation and model building', pg 3643)
 	ro_eta_grid = gen_ro_eta_grid(params)
@@ -128,13 +128,12 @@ def run_experiment_1(params, phi):
 
 		# salience of position: to start, 1 if stimulus and 0 if not
 		params["alpha"] = num_pos
-
+		print(params["alpha"])
 		# runs 100 trials 
-		for i in range(params["num_samples"]):
-			j_list = []
+		for i in range(params["num_trials"]):
+
 			# choose a location to test on
-			j = max(np.random.randint(0, params["array_sizes"][pos]) - 1, 0)
-			j_list.append(j)
+			j = max(np.random.randint(0, params["array_sizes"][pos] + 1) - 1, 0)
 
 			# sample from error distribution
 			delta_theta = calc_error(theta, phi, j, params, sample_points)
@@ -144,7 +143,7 @@ def run_experiment_1(params, phi):
 			if i % 10 == 0:
 
 				print("Trial: {}, Number of positions: {}".format(i, num_pos))
-				print(j_list)
+		print(params)
 	return output
 
 if __name__ ==  "__main__":
@@ -157,10 +156,12 @@ if __name__ ==  "__main__":
 	sample_points = np.linspace(-math.pi, math.pi, params["sample_size"], endpoint=False)
 	variance, kurtosis = np.empty((len(params["array_sizes"]),)), np.empty((len(params["array_sizes"]),))
 	for position in range(len(params['array_sizes'])):
-		kurtosis[position] = stats.kurtosis(imported_results[position])
-		variance[position] = np.var(imported_results[position])
-		print(imported_results[position])
-		plt.plot(sample_points, imported_results[position])
+		data = imported_results[position]
+		kurtosis[position] = stats.kurtosis(data)
+		variance[position] = np.var(data)
+
+		print(data)
+		plt.plot(sample_points, data)
 		# sns.kdeplot(imported_results[position])
 		plt.title("Error Distribution for {} Stimuli".format(params['array_sizes'][position]))
 		plt.show()
