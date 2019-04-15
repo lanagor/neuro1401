@@ -5,10 +5,8 @@ import os
 from scipy import stats
 import seaborn as sns
 
-# Note I changed num_trials to 100 for now
-
 params = {"M": 100, "grid_size": 50, "T": 100, "sample_size": 100, "num_samples": 100, "alpha": None,
-			"ro": 0.5, "locations": 8, "num_trials": 100, "array_sizes": [1, 2, 4, 8], "gamma": 160}
+			"ro": 0.5, "locations": 8, "num_trials": 1000, "array_sizes": [1, 2, 4, 8], "gamma": None}
 sample_points = np.linspace(-math.pi, math.pi, num=100, endpoint=False)
 
 # randomly generates a sampling of preferred orientations for i neurons 
@@ -112,13 +110,16 @@ def calc_error(theta_j, phi, j, params, sample_points):
 def run_experiment_1(params, phi):
 	# matrix for storing number of errors of each size: initialized to 0
 	output = np.zeros((len(params["array_sizes"]), params["sample_size"]))
-	params["gamma"] = np.random.randint(230, 640)
+	# params["gamma"] = np.random.randint(20, 640)
+	params['gamma'] = 20
+	# print("Gamma: {}".format(params['gamma']))
 
 	# generates grid with all possible combos of ro/eta values ('simulation and model building', pg 3643)
 	ro_eta_grid = gen_ro_eta_grid(params)
 
 	r, e = (np.random.randint(0, params["grid_size"]) - 1, np.random.randint(0, params["grid_size"]) - 1)
 	params["ro"], params["eta"] = ro_eta_grid[r][e][0],  ro_eta_grid[r][e][1]
+	print("Gamma: {}, Rho: {}".format(params['gamma'], params['ro']))
 
 	# discrete, uniformly distributed set of points in range [-pi, pi)
 	sample_points = np.linspace(-math.pi, math.pi, params["sample_size"], endpoint=False)
@@ -147,7 +148,7 @@ def run_experiment_1(params, phi):
 			if i % 10 == 0:
 
 				print("Trial: {}, Number of positions: {}".format(i, num_pos))
-		print(params)
+		# print(params)
 		print("Output for {} positions: {}".format(num_pos, output[pos, :]))
 	return output
 
@@ -170,14 +171,15 @@ if __name__ ==  "__main__":
 		# sns.kdeplot(imported_results[position])
 		plt.title("Error Distribution for {} Stimuli".format(params['array_sizes'][position]))
 		plt.show()
+		# FIX HISTOGRAM (CURRENTLY ONLY PLOTTING FOR POSITIVE VALUES ON X-AXIS)
 		plt.hist(imported_results[position], bins=50, range=(-np.pi, np.pi))
 		plt.title("Histogram of Errors for {} Stimuli".format(params['array_sizes'][position]))
 		plt.show()
-	plt.scatter(params["array_sizes"], variance)
-	plt.xlabel("Items")
-	plt.ylabel("variance")
-	plt.show()
-	plt.scatter(params["array_sizes"], kurtosis)
-	plt.xlabel("Items")
-	plt.ylabel("kurtosis")
-	plt.show()
+	# plt.scatter(params["array_sizes"], variance)
+	# plt.xlabel("Items")
+	# plt.ylabel("variance")
+	# plt.show()
+	# plt.scatter(params["array_sizes"], kurtosis)
+	# plt.xlabel("Items")
+	# plt.ylabel("kurtosis")
+	# plt.show()
